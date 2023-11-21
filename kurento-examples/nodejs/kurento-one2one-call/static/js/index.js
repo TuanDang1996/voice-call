@@ -178,7 +178,12 @@ function incomingCall(message) {
 		var options = {
 			localVideo : videoInput,
 			remoteVideo : videoOutput,
-			onicecandidate : onIceCandidate
+			onicecandidate : onIceCandidate,
+			configuration :  { iceServers :  [
+				{"url":"turn:103.56.163.217:3478",
+				 "username":"coturn",
+				 "credential":"oursecret"}
+				] }
 		}
 
 		webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options,
@@ -245,7 +250,12 @@ function call() {
 	var options = {
 		localVideo : videoInput,
 		remoteVideo : videoOutput,
-		onicecandidate : onIceCandidate
+		onicecandidate : onIceCandidate,
+		configuration :  { iceServers :  [
+			{"url":"turn:103.56.163.217:3478",
+			 "username":"coturn",
+			 "credential":"oursecret"}
+			] }
 	}
 
 	webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options, function(
