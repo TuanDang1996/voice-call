@@ -13,6 +13,14 @@ services:
       - 8888:8888
     networks:
       - kurento_network
+  coturn:
+    hostname: coturn
+    build:
+      context: ../coturn
+      dockerfile: Dockerfile
+    ports:
+      - 3478:3478
+      - 3478:3478/udp
 
 networks:
   kurento_network:
