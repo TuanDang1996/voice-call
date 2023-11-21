@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  kurento:
+    labels:
+      org.fiware: 'tutorial'
+    image: kurento/kurento-media-server:7.0
+    hostname: kurento
+    container_name: fiware-kurento
+    expose:
+      - "8888"
+    ports:
+      - 8888:8888
+    networks:
+      - kurento_network
+
+networks:
+  kurento_network:
+    driver: bridge
