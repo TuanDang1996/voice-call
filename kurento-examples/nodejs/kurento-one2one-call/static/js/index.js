@@ -15,7 +15,7 @@
  *
  */
 
-var ws = new WebSocket('wss://' + location.host + '/one2one');
+var ws = new WebSocket('wss://103.56.163.217:8443/signaling');
 var videoInput;
 var videoOutput;
 var webRtcPeer;
@@ -181,8 +181,8 @@ function incomingCall(message) {
 			onicecandidate : onIceCandidate,
 			configuration :  { iceServers :  [
 				{"url":"turn:103.56.163.217:3478",
-				 "username":"coturn",
-				 "credential":"oursecret"}
+				 "username":"kurento",
+				 "credential":"kurento"}
 				] }
 		}
 
@@ -253,8 +253,8 @@ function call() {
 		onicecandidate : onIceCandidate,
 		configuration :  { iceServers :  [
 			{"url":"turn:103.56.163.217:3478",
-			 "username":"coturn",
-			 "credential":"oursecret"}
+			 "username":"kurento",
+			 "credential":"kurento"}
 			] }
 	}
 
