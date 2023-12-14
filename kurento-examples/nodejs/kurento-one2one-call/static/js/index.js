@@ -15,7 +15,7 @@
  *
  */
 
-var ws = new WebSocket('wss://localhost:8444/signaling');
+var ws = new WebSocket('wss://media-demo.vinhnd.dev/signaling');
 var videoInput;
 var videoOutput;
 var webRtcPeer;
@@ -174,7 +174,7 @@ function callResponse(message) {
 			remoteVideo : outputArray[message.userName],
 			onicecandidate : onIceCandidate(message.userName),
 			configuration :  { iceServers :  [
-					{"url":"turn:localhost:3478",
+					{"url":"turn:103.56.163.217:3478",
 						"username":"kurento",
 						"credential":"kurento"}
 				] }
@@ -220,7 +220,7 @@ function incomingCall(message) {
 	}
 
 	setCallState(PROCESSING_CALL);
-	const hasConfirmed = document.getElementById('name').value.toString() !== '3';
+	const hasConfirmed = true;
 	if (hasConfirmed) {
 		showSpinner(videoInput, videoOutput, videoOutput2);
 
@@ -238,7 +238,7 @@ function incomingCall(message) {
 			},
 			onicecandidate : onIceCandidate(document.getElementById('name').value),
 			configuration :  { iceServers :  [
-					{"url":"turn:localhost:3478",
+					{"url":"turn:103.56.163.217:3478",
 						"username":"kurento",
 						"credential":"kurento"}
 				] }
@@ -284,7 +284,7 @@ function receiveMediasFrom(message) {
 			remoteVideo : outputArray[p.name],
 			onicecandidate : onIceCandidate(p.name),
 			configuration :  { iceServers :  [
-					{"url":"turn:localhost:3478",
+					{"url":"turn:103.56.163.217:3478",
 						"username":"kurento",
 						"credential":"kurento"}
 				] }
@@ -352,7 +352,7 @@ function call() {
 		},
 		onicecandidate : onIceCandidate(document.getElementById('name').value),
 		configuration :  { iceServers :  [
-				{"url":"turn:localhost:3478",
+				{"url":"turn:103.56.163.217:3478",
 					"username":"kurento",
 					"credential":"kurento"}
 			] }
@@ -479,7 +479,7 @@ function joinRoom() {
 		},
 		onicecandidate : onIceCandidate(document.getElementById('name').value),
 		configuration :  { iceServers :  [
-				{"url":"turn:localhost:3478",
+				{"url":"turn:103.56.163.217:3478",
 					"username":"kurento",
 					"credential":"kurento"}
 			] }
