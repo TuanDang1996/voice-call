@@ -71,7 +71,7 @@
         </ol>
       </div>
       <div class="row">
-        <div class="col-md-5">
+        <div class="col-md-12">
           <label class="control-label" for="name">Name</label>
           <div class="row">
             <div class="col-md-6">
@@ -89,6 +89,9 @@
             <div class="col-md-6">
               <input id="peer" name="peer" class="form-control" type="text">
             </div>
+            <div class="col-md-6">
+              <input id="peer2" name="peer2" class="form-control" type="text">
+            </div>
             <div class="col-md-6 text-right">
               <a id="call" href="#" class="btn btn-success">
                 <span class="glyphicon glyphicon-play"></span> Call</a>
@@ -97,17 +100,37 @@
             </div>
           </div>
           <br/>
+          <br/>
+          <label class="control-label" for="room">Room Id</label>
+          <div class="row">
+            <div class="col-md-6">
+              <input id="room" name="room" class="form-control" type="text">
+            </div>
+            <div class="col-md-6 text-right">
+              <a id="join" href="#" class="btn btn-success">
+                <span class="glyphicon glyphicon-play"></span> Join Room</a>
+            </div>
+          </div>
+          <br/>
           <label class="control-label" for="console">Console</label><br><br>
           <div id="console" class="democonsole">
             <ul></ul>
           </div>
         </div>
-        <div class="col-md-7">
-          <div id="videoBig">
-            <video id="videoOutput" autoplay width="640px" height="480px" poster="img/webrtc.png"></video>
+        <br/>
+        <div class="col-md-4">
+          <div id="videoBig3">
+            <video id="videoOutput3" autoplay width="300px" height="300px" poster="img/webrtc.png"></video>
           </div>
-          <div id="videoSmall">
-            <video id="videoInput" autoplay width="240px" height="180px" poster="img/webrtc.png"></video>
+        </div>
+        <div class="col-md-4">
+          <div id="videoBig">
+            <video id="videoOutput" autoplay width="300px" height="300px" poster="img/webrtc.png"></video>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="videoBig2">
+            <video id="videoOutput2" autoplay width="300px" height="300px" poster="img/webrtc.png"></video>
           </div>
         </div>
       </div>

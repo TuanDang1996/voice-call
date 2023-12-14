@@ -15,16 +15,21 @@
  *
  */
 
-var ws = new WebSocket('wss://103.56.163.217:8443/signaling');
+var ws = new WebSocket('wss://localhost:8444/signaling');
 var videoInput;
 var videoOutput;
 var webRtcPeer;
+var videoOutput2;
+
+var outputsObject = {}
+var outputArray
 
 var registerName = null;
 const NOT_REGISTERED = 0;
 const REGISTERING = 1;
 const REGISTERED = 2;
 var registerState = null
+var roomId = ''
 
 function setRegisterState(nextState) {
 	switch (nextState) {
@@ -78,9 +83,9 @@ function setCallState(nextState) {
 window.onload = function() {
 	console = new Console();
 	setRegisterState(NOT_REGISTERED);
-	var drag = new Draggabilly(document.getElementById('videoSmall'));
-	videoInput = document.getElementById('videoInput');
+	videoInput = document.getElementById('videoOutput3');
 	videoOutput = document.getElementById('videoOutput');
+	videoOutput2 = document.getElementById('videoOutput2');
 	document.getElementById('name').focus();
 
 	document.getElementById('register').addEventListener('click', function() {
@@ -91,6 +96,9 @@ window.onload = function() {
 	});
 	document.getElementById('terminate').addEventListener('click', function() {
 		stop();
+	});
+	document.getElementById('join').addEventListener('click', function() {
+		joinRoom();
 	});
 }
 
@@ -103,32 +111,46 @@ ws.onmessage = function(message) {
 	console.info('Received message: ' + message.data);
 
 	switch (parsedMessage.id) {
-	case 'registerResponse':
-		resgisterResponse(parsedMessage);
-		break;
-	case 'callResponse':
-		callResponse(parsedMessage);
-		break;
-	case 'incomingCall':
-		incomingCall(parsedMessage);
-		break;
-	case 'startCommunication':
-		startCommunication(parsedMessage);
-		break;
-	case 'stopCommunication':
-		console.info("Communication ended by remote peer");
-		stop(true);
-		break;
-	case 'iceCandidate':
-		webRtcPeer.addIceCandidate(parsedMessage.candidate)
+		case 'registerResponse':
+			resgisterResponse(parsedMessage);
+			break;
+		case 'callResponse':
+			callResponse(parsedMessage);
+			break;
+		case 'incomingCall':
+			incomingCall(parsedMessage);
+			break;
+		case 'startCommunication':
+			startCommunication(parsedMessage);
+			break;
+		case 'stopCommunication':
+			console.info("Communication ended by remote peer");
+			stop(true);
+			break;
+		case 'beginSendMedia':
+			webRtcPeer.processAnswer(parsedMessage.sdpAnswer);
+			break;
+		case 'receiveMediasFrom':
+			receiveMediasFrom(parsedMessage)
+			break;
+		case 'iceCandidate':
+			iceCandidateHandler(parsedMessage)
 		break;
 	default:
 		console.error('Unrecognized message', parsedMessage);
 	}
 }
 
+function iceCandidateHandler(message){
+	if(message.username === document.getElementById('name').value){
+		webRtcPeer.addIceCandidate(message.candidate)
+	} else {
+		outputsObject[message.username].addIceCandidate(message.candidate)
+	}
+}
+
 function resgisterResponse(message) {
-	if (message.response == 'accepted') {
+	if (message.response === 'accepted') {
 		setRegisterState(REGISTERED);
 	} else {
 		setRegisterState(NOT_REGISTERED);
@@ -140,29 +162,56 @@ function resgisterResponse(message) {
 }
 
 function callResponse(message) {
-	if (message.response != 'accepted') {
+	if (message.response !== 'accept') {
 		console.info('Call not accepted by peer. Closing call');
 		var errorMessage = message.message ? message.message
 				: 'Unknown reason for call rejection.';
 		console.log(errorMessage);
-		stop(true);
+		// stop(true);
 	} else {
-		setCallState(IN_CALL);
-		webRtcPeer.processAnswer(message.sdpAnswer);
+
+		const options = {
+			remoteVideo : outputArray[message.userName],
+			onicecandidate : onIceCandidate(message.userName),
+			configuration :  { iceServers :  [
+					{"url":"turn:localhost:3478",
+						"username":"kurento",
+						"credential":"kurento"}
+				] }
+		}
+
+		outputsObject[message.userName] = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
+			function (error) {
+				if(error){
+					console.log(error);
+					return;
+				}
+				this.generateOffer((error, sdp) => {
+					var response = {
+						id: 'receiveMediaFrom',
+						roomId: message.roomId,
+						remoteId: message.userName,
+						sdpOffer: sdp,
+
+					};
+					sendMessage(response);
+				})
+			})
 	}
 }
 
 function startCommunication(message) {
 	setCallState(IN_CALL);
-	webRtcPeer.processAnswer(message.sdpAnswer);
+	outputsObject[message.userName].processAnswer(message.sdpAnswer);
 }
 
 function incomingCall(message) {
+	roomId=message.roomId
 	// If bussy just reject without disturbing user
-	if (callState != NO_CALL) {
+	if (callState !== NO_CALL) {
 		var response = {
 			id : 'incomingCallResponse',
-			from : message.from,
+			roomId : message.roomId,
 			callResponse : 'reject',
 			message : 'bussy'
 
@@ -171,58 +220,99 @@ function incomingCall(message) {
 	}
 
 	setCallState(PROCESSING_CALL);
-	if (confirm('User ' + message.from
-			+ ' is calling you. Do you accept the call?')) {
-		showSpinner(videoInput, videoOutput);
+	const hasConfirmed = document.getElementById('name').value.toString() !== '3';
+	if (hasConfirmed) {
+		showSpinner(videoInput, videoOutput, videoOutput2);
 
-		var options = {
+		const options = {
 			localVideo : videoInput,
-			remoteVideo : videoOutput,
-			onicecandidate : onIceCandidate,
+			mediaConstraints: {
+				audio : true,
+				video : {
+					mandatory : {
+						maxWidth : 320,
+						maxFrameRate : 15,
+						minFrameRate : 15
+					}
+				}
+			},
+			onicecandidate : onIceCandidate(document.getElementById('name').value),
 			configuration :  { iceServers :  [
-				{"url":"turn:103.56.163.217:3478",
-				 "username":"kurento",
-				 "credential":"kurento"}
+					{"url":"turn:localhost:3478",
+						"username":"kurento",
+						"credential":"kurento"}
 				] }
 		}
 
-		webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options,
-				function(error) {
-					if (error) {
-						console.error(error);
-						setCallState(NO_CALL);
-					}
+		webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options,
+			function (error){
+				if(error){
+					console.log(error);
+					return;
+				}
+				this.generateOffer((error, sdp) => {
+					var response = {
+						id : 'incomingCallResponse',
+						roomId : message.roomId,
+						callResponse : 'accept',
+						sdpOffer : sdp,
 
-					this.generateOffer(function(error, offerSdp) {
-						if (error) {
-							console.error(error);
-							setCallState(NO_CALL);
-						}
-						var response = {
-							id : 'incomingCallResponse',
-							from : message.from,
-							callResponse : 'accept',
-							sdpOffer : offerSdp
-						};
-						sendMessage(response);
-					});
-				});
+					};
+					sendMessage(response);
+				})
+			})
 
 	} else {
 		var response = {
 			id : 'incomingCallResponse',
-			from : message.from,
+			roomId : message.roomId,
 			callResponse : 'reject',
 			message : 'user declined'
 		};
 		sendMessage(response);
-		stop(true);
+		// stop(true);
 	}
+}
+
+function receiveMediasFrom(message) {
+	webRtcPeer.processAnswer(message.sdpAnswer);
+	message.participants.forEach(p => {
+		if(p.name === document.getElementById('name').value)
+			return;
+
+		const options = {
+			remoteVideo : outputArray[p.name],
+			onicecandidate : onIceCandidate(p.name),
+			configuration :  { iceServers :  [
+					{"url":"turn:localhost:3478",
+						"username":"kurento",
+						"credential":"kurento"}
+				] }
+		}
+
+		outputsObject[p.name] = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
+			function (error){
+				if(error){
+					console.log(error);
+					return;
+				}
+				this.generateOffer((error, sdp) => {
+					var response = {
+						id: 'receiveMediaFrom',
+						roomId: message.roomId,
+						remoteId: p.name,
+						sdpOffer: sdp,
+
+					};
+					sendMessage(response);
+				})
+			})
+	})
 }
 
 function register() {
 	var name = document.getElementById('name').value;
-	if (name == '') {
+	if (name === '') {
 		window.alert("You must insert your user name");
 		return;
 	}
@@ -235,51 +325,56 @@ function register() {
 	};
 	sendMessage(message);
 	document.getElementById('peer').focus();
+	outputArray = buildVideoAllocation()
 }
 
 function call() {
-	if (document.getElementById('peer').value == '') {
+	if (document.getElementById('peer').value === '') {
 		window.alert("You must specify the peer name");
 		return;
 	}
 
 	setCallState(PROCESSING_CALL);
 
-	showSpinner(videoInput, videoOutput);
+	showSpinner(videoInput, videoOutput, videoOutput2);
 
 	var options = {
 		localVideo : videoInput,
-		remoteVideo : videoOutput,
-		onicecandidate : onIceCandidate,
+		mediaConstraints: {
+			audio : true,
+			video : {
+				mandatory : {
+					maxWidth : 320,
+					maxFrameRate : 15,
+					minFrameRate : 15
+				}
+			}
+		},
+		onicecandidate : onIceCandidate(document.getElementById('name').value),
 		configuration :  { iceServers :  [
-			{"url":"turn:103.56.163.217:3478",
-			 "username":"kurento",
-			 "credential":"kurento"}
+				{"url":"turn:localhost:3478",
+					"username":"kurento",
+					"credential":"kurento"}
 			] }
 	}
 
-	webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options, function(
-			error) {
-		if (error) {
-			console.error(error);
-			setCallState(NO_CALL);
+	webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options,
+		function (error) {
+		if(error){
+			console.log(error);
+			return;
 		}
+			this.generateOffer((error, offerSdp) => {
+				const response = {
+					id : 'call',
+					from: document.getElementById('name').value,
+					to : [document.getElementById('peer').value, document.getElementById('peer2').value],
+					sdpOffer : offerSdp,
 
-		this.generateOffer(function(error, offerSdp) {
-			if (error) {
-				console.error(error);
-				setCallState(NO_CALL);
-			}
-			var message = {
-				id : 'call',
-				from : document.getElementById('name').value,
-				to : document.getElementById('peer').value,
-				sdpOffer : offerSdp
-			};
-			sendMessage(message);
-		});
-	});
-
+				};
+				sendMessage(response);
+			})
+		})
 }
 
 function stop(message) {
@@ -288,6 +383,11 @@ function stop(message) {
 		webRtcPeer.dispose();
 		webRtcPeer = null;
 
+		Object.values(outputsObject).forEach(video => {
+			video.dispose();
+			video = null;
+		})
+
 		if (!message) {
 			var message = {
 				id : 'stop'
@@ -295,7 +395,7 @@ function stop(message) {
 			sendMessage(message);
 		}
 	}
-	hideSpinner(videoInput, videoOutput);
+	hideSpinner(videoInput, videoOutput, videoOutput2);
 }
 
 function sendMessage(message) {
@@ -304,14 +404,18 @@ function sendMessage(message) {
 	ws.send(jsonMessage);
 }
 
-function onIceCandidate(candidate) {
-	console.log('Local candidate' + JSON.stringify(candidate));
+function onIceCandidate(name) {
+	return (candidate) => {
+		console.log('Local candidate' + JSON.stringify(candidate));
 
-	var message = {
-		id : 'onIceCandidate',
-		candidate : candidate
+		var message = {
+			id : 'onIceCandidate',
+			candidate : candidate,
+			name
+		}
+		sendMessage(message);
 	}
-	sendMessage(message);
+
 }
 
 function showSpinner() {
@@ -336,3 +440,65 @@ $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
 	event.preventDefault();
 	$(this).ekkoLightbox();
 });
+
+function buildVideoAllocation(){
+	const nameArray = ["1", "2", "3"]
+	const videoRemoteArray = [videoOutput, videoOutput2]
+	let count = 0;
+	let result = {}
+	nameArray.forEach(name1 => {
+		if(name1 === document.getElementById('name').value.toString())
+			return;
+		result[name1] = videoRemoteArray[count];
+		count++;
+	})
+	return result
+}
+
+function joinRoom() {
+	if (document.getElementById('peer').value === '') {
+		window.alert("You must specify the peer name");
+		return;
+	}
+
+	setCallState(PROCESSING_CALL);
+
+	showSpinner(videoInput, videoOutput, videoOutput2);
+
+	var options = {
+		localVideo : videoInput,
+		mediaConstraints: {
+			audio : true,
+			video : {
+				mandatory : {
+					maxWidth : 320,
+					maxFrameRate : 15,
+					minFrameRate : 15
+				}
+			}
+		},
+		onicecandidate : onIceCandidate(document.getElementById('name').value),
+		configuration :  { iceServers :  [
+				{"url":"turn:localhost:3478",
+					"username":"kurento",
+					"credential":"kurento"}
+			] }
+	}
+
+	webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options,
+		function (error) {
+			if(error){
+				console.log(error);
+				return;
+			}
+			this.generateOffer((error, offerSdp) => {
+				const response = {
+					id : 'joinRoom',
+					roomId: document.getElementById('room').value,
+					sdpOffer : offerSdp,
+
+				};
+				sendMessage(response);
+			})
+		})
+}
