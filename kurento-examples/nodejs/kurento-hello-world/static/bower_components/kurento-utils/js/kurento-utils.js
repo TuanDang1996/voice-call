@@ -404,7 +404,7 @@ function WebRtcPeer(mode, options, callback) {
             logger.debug('asnwer::planB', dumpSDP(planBAnswer));
             answer = planBAnswer;
         }
-        logger.debug('SDP answer received, setting remote description');
+        console.log('SDP answer received, setting remote description');
         if (pc.signalingState === 'closed') {
             return callback('PeerConnection is closed');
         }

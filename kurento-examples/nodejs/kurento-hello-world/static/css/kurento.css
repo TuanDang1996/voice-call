@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2014-2015 Kurento (https://kurento.openvidu.io/)
+ * (C) Copyright 2014 Kurento (https://kurento.openvidu.io/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ body {
 	padding-top: 40px;
 }
 
-video,#console {
+video, #console {
 	display: block;
 	font-size: 14px;
 	line-height: 1.42857143;
@@ -37,16 +37,43 @@ video,#console {
 	-webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
 	-webkit-transition: border-color ease-in-out .15s, box-shadow
-		ease-in-out .15s;
+	ease-in-out .15s;
 	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
 }
 
 #console {
-	min-height: 120px;
-	max-height: 360px;
+	overflow-y: auto;
+	width: 100%;
+	height: 175px;
 }
 
-.col-md-2 {
-	width: 80px;
-	padding-top: 190px;
+#videoContainer {
+	position: absolute;
+	float: left;
+}
+
+#videoBig {
+	width: 640px;
+	height: 480px;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+div#videoSmall {
+	width: 240px;
+	height: 180px;
+	padding: 0px;
+	position: absolute;
+	top: 15px;
+	left: 400px;
+	cursor: pointer;
+	z-index: 10;
+	padding: 0px;
+}
+
+div.dragged {
+	cursor: all-scroll !important;
+	border-color: blue !important;
+	z-index: 10 !important;
 }
