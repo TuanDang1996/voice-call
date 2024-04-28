@@ -14,12 +14,17 @@
  * limitations under the License.
  *
  */
-function connect(){
-	var ws = new WebSocket('wss://media-demo.vinhnd.dev/signaling');
+function connect(reconnectName){
+	const param = reconnectName ? `?name=${reconnectName}` : '';
+	// var ws = new WebSocket('wss://media-demo.vinhnd.dev/signaling');
+	console.log(param)
+	// var ws = new WebSocket(`wss://media-demo.vinhnd.dev/signaling${param}`);
+	var ws = new WebSocket(`ws://localhost:8444/signaling${param}`);
 	var videoInput;
 	var videoOutput;
 	var webRtcPeer;
 	var videoOutput2;
+	var webRtcPeerRemote;
 
 	var outputsObject = {}
 	var outputArray
@@ -53,6 +58,7 @@ function connect(){
 		}
 		registerState = nextState;
 	}
+
 
 	const NO_CALL = 0;
 	const PROCESSING_CALL = 1;
@@ -100,6 +106,7 @@ function connect(){
 		document.getElementById('join').addEventListener('click', function () {
 			joinRoom();
 		});
+
 	}
 
 	window.onbeforeunload = function () {
@@ -109,7 +116,8 @@ function connect(){
 	ws.onclose = function(e) {
 		console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
 		setTimeout(function() {
-			connect();
+			var name = document.getElementById('name').value;
+			connect(name);
 		}, 1000);
 	};
 
@@ -141,12 +149,19 @@ function connect(){
 			case 'receiveMediasFrom':
 				receiveMediasFrom(parsedMessage)
 				break;
+			case 'reJoinCallAction':
+				reJoinCall(parsedMessage)
+				break;
 			case 'iceCandidate':
 				iceCandidateHandler(parsedMessage)
 				break;
 			default:
 				console.error('Unrecognized message', parsedMessage);
 		}
+	}
+
+	function reJoinCall(message) {
+		joinRoom(message.roomId)
 	}
 
 	function iceCandidateHandler(message) {
@@ -192,7 +207,12 @@ function connect(){
 				}
 			}
 
-			outputsObject[message.userName] = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
+			if(outputsObject[message.userName])
+				outputsObject[message.userName].dispose()
+
+
+
+			outputsObject[message.userName] = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
 				function (error) {
 					if (error) {
 						console.log(error);
@@ -310,7 +330,7 @@ function connect(){
 				}
 			}
 
-			outputsObject[p.name] = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
+			outputsObject[p.name] = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
 				function (error) {
 					if (error) {
 						console.log(error);
@@ -328,6 +348,14 @@ function connect(){
 					})
 				})
 		})
+	}
+
+	function reconnect(name){
+		var message = {
+			id: 'register',
+			name: name
+		};
+		sendMessage(message);
 	}
 
 	function register() {
@@ -479,11 +507,7 @@ function connect(){
 		return result
 	}
 
-	function joinRoom() {
-		if (document.getElementById('peer').value === '') {
-			window.alert("You must specify the peer name");
-			return;
-		}
+	function joinRoom(roomId) {
 
 		setCallState(PROCESSING_CALL);
 
@@ -522,7 +546,7 @@ function connect(){
 				this.generateOffer((error, offerSdp) => {
 					const response = {
 						id: 'joinRoom',
-						roomId: document.getElementById('room').value,
+						roomId: roomId ? roomId : document.getElementById('room').value,
 						sdpOffer: offerSdp,
 
 					};
