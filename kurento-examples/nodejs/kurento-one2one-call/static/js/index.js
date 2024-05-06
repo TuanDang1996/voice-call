@@ -107,6 +107,26 @@ function connect(reconnectName){
 			joinRoom();
 		});
 
+		document.getElementById('createGroup').addEventListener('click', function () {
+			createGroup();
+		});
+
+		document.getElementById('addUser').addEventListener('click', function () {
+			addMember();
+		});
+
+		document.getElementById('removeUser').addEventListener('click', function () {
+			removeMember();
+		});
+
+		document.getElementById('fetchALlGroup').addEventListener('click', function () {
+			fetchAllGroups();
+		});
+
+		document.getElementById('getAllMember').addEventListener('click', function () {
+			getAllMemberByGroupId();
+		});
+
 	}
 
 	window.onbeforeunload = function () {
@@ -553,6 +573,58 @@ function connect(reconnectName){
 					sendMessage(response);
 				})
 			})
+	}
+
+	function createGroup(){
+		const groupName = document.getElementById('groupName').value
+		var name = document.getElementById('name').value;
+		const response = {
+			id: 'createGroup',
+			groupName: groupName,
+			members: [name],
+
+		};
+		sendMessage(response);
+	}
+
+	function addMember(){
+		const groupId = document.getElementById('groupId').value
+		var name = document.getElementById('member1').value;
+		const response = {
+			id: 'addMember',
+			groupId: groupId,
+			members: [name],
+
+		};
+		sendMessage(response);
+	}
+
+	function removeMember(){
+		const groupId = document.getElementById('groupId2').value
+		var name = document.getElementById('member2').value;
+		const response = {
+			id: 'removeMember',
+			groupId: groupId,
+			members: [name],
+
+		};
+		sendMessage(response);
+	}
+
+	function fetchAllGroups(){
+		const response = {
+			id: 'getAllGroups'
+		};
+		sendMessage(response);
+	}
+
+	function getAllMemberByGroupId(){
+		const groupId = document.getElementById('groupId3').value
+		const response = {
+			id: 'getAllMemberInGroup',
+			groupId: groupId
+		};
+		sendMessage(response);
 	}
 }
 
