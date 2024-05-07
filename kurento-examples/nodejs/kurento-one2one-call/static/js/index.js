@@ -21,9 +21,7 @@ function connect(reconnectName){
 	// var ws = new WebSocket(`wss://media-demo.vinhnd.dev/signaling${param}`);
 	var ws = new WebSocket(`ws://localhost:8444/signaling${param}`);
 	var videoInput;
-	var videoOutput;
 	var webRtcPeer;
-	var videoOutput2;
 	var webRtcPeerRemote;
 
 	var outputsObject = {}
@@ -90,8 +88,6 @@ function connect(reconnectName){
 		console = new Console();
 		setRegisterState(NOT_REGISTERED);
 		videoInput = document.getElementById('videoOutput3');
-		videoOutput = document.getElementById('videoOutput');
-		videoOutput2 = document.getElementById('videoOutput2');
 		document.getElementById('name').focus();
 
 		document.getElementById('register').addEventListener('click', function () {
@@ -105,26 +101,6 @@ function connect(reconnectName){
 		});
 		document.getElementById('join').addEventListener('click', function () {
 			joinRoom();
-		});
-
-		document.getElementById('createGroup').addEventListener('click', function () {
-			createGroup();
-		});
-
-		document.getElementById('addUser').addEventListener('click', function () {
-			addMember();
-		});
-
-		document.getElementById('removeUser').addEventListener('click', function () {
-			removeMember();
-		});
-
-		document.getElementById('fetchALlGroup').addEventListener('click', function () {
-			fetchAllGroups();
-		});
-
-		document.getElementById('getAllMember').addEventListener('click', function () {
-			getAllMemberByGroupId();
 		});
 
 	}
@@ -212,9 +188,19 @@ function connect(reconnectName){
 			console.log(errorMessage);
 			// stop(true);
 		} else {
+			const div = document.createElement("div")
+			div.className = "col-md-4";
+			const videoDom = document.createElement("video")
+			videoDom.id = `videoOutput-${message.userName}`
+			videoDom.autoplay = true
+			videoDom.width = 330
+			videoDom.height = 330
+			videoDom.poster = "img/webrtc.png"
+			div.appendChild(videoDom)
+			document.getElementById("videoOut").appendChild(div);
 
 			const options = {
-				remoteVideo: outputArray[message.userName],
+				remoteVideo: videoDom,
 				onicecandidate: onIceCandidate(message.userName),
 				configuration: {
 					iceServers: [
@@ -229,8 +215,6 @@ function connect(reconnectName){
 
 			if(outputsObject[message.userName])
 				outputsObject[message.userName].dispose()
-
-
 
 			outputsObject[message.userName] = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
 				function (error) {
@@ -274,7 +258,19 @@ function connect(reconnectName){
 		setCallState(PROCESSING_CALL);
 		const hasConfirmed = true;
 		if (hasConfirmed) {
-			showSpinner(videoInput, videoOutput, videoOutput2);
+
+			// const div = document.createElement("div")
+			// div.className = "col-md-4";
+			// const videoDom = document.createElement("video")
+			// videoDom.id = `videoOutput-${message.from}`
+			// videoDom.autoplay = true
+			// videoDom.width = 330
+			// videoDom.height = 330
+			// videoDom.poster = "img/webrtc.png"
+			// div.appendChild(videoDom)
+			// document.getElementById("videoOut").appendChild(div);
+
+			showSpinner(videoInput);
 
 			const options = {
 				localVideo: videoInput,
@@ -336,8 +332,19 @@ function connect(reconnectName){
 			if (p.name === document.getElementById('name').value)
 				return;
 
+			const div = document.createElement("div")
+			div.className = "col-md-4";
+			const videoDom = document.createElement("video")
+			videoDom.id = `videoOutput-${p.name}`
+			videoDom.autoplay = true
+			videoDom.width = 330
+			videoDom.height = 330
+			videoDom.poster = "img/webrtc.png"
+			div.appendChild(videoDom)
+			document.getElementById("videoOut").appendChild(div);
+
 			const options = {
-				remoteVideo: outputArray[p.name],
+				remoteVideo: videoDom,
 				onicecandidate: onIceCandidate(p.name),
 				configuration: {
 					iceServers: [
@@ -393,7 +400,6 @@ function connect(reconnectName){
 		};
 		sendMessage(message);
 		document.getElementById('peer').focus();
-		outputArray = buildVideoAllocation()
 	}
 
 	function call() {
@@ -404,7 +410,7 @@ function connect(reconnectName){
 
 		setCallState(PROCESSING_CALL);
 
-		showSpinner(videoInput, videoOutput, videoOutput2);
+		showSpinner(videoInput);
 
 		var options = {
 			localVideo: videoInput,
@@ -513,25 +519,11 @@ function connect(reconnectName){
 		$(this).ekkoLightbox();
 	});
 
-	function buildVideoAllocation() {
-		const nameArray = ["1", "2", "3"]
-		const videoRemoteArray = [videoOutput, videoOutput2]
-		let count = 0;
-		let result = {}
-		nameArray.forEach(name1 => {
-			if (name1 === document.getElementById('name').value.toString())
-				return;
-			result[name1] = videoRemoteArray[count];
-			count++;
-		})
-		return result
-	}
-
 	function joinRoom(roomId) {
 
 		setCallState(PROCESSING_CALL);
 
-		showSpinner(videoInput, videoOutput, videoOutput2);
+		showSpinner(videoInput);
 
 		var options = {
 			localVideo: videoInput,
